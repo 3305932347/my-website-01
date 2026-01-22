@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="referrer" content="no-referrer-when-downgrade">
+    <title>明年春暖花开日</title>
+    
+    <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+
+    <style>
+        /* --- 1. 核心变量 --- */
+        :root {
+            --bg-color: #f5e6e8;
+            --overlay-bg: rgba(0, 0, 0, 0.9);
+            --accent-color: #ffffff;
+            /* 音乐按钮专用背景：加深以保证可见性 */
+            --btn-bg: rgba(0, 0, 0, 0.6); 
+        }
+
+        /* --- 2. 全局重置 --- */
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
+        body, html {
+            margin: 0; padding: 0; width: 100%; height: 100%;
+            background-color: var(--bg-color);
+            font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+            overflow: hidden; touch-action: none;
+        }
+
+        /* --- 3. 布局结构 --- */
+        .main-stage {
+            display: flex; width: 100%; height: 100%;
+            padding: 8px; gap: 8px;
+            padding-bottom: 60px; /* 底部给一言留位 */
+        }
+
+        .column-viewport {
+            flex: 1; height: 100%;
+            overflow: hidden; position: relative;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+        }
+
+        /* 滚动轨道 */
+        .scroll-track {
+            display: flex; flex-direction: column; gap: 10px;
+            padding: 8px 0; width: 100%;
+            will-change: transform; 
+            transform: translate3d(0, 50px, 0); /* 初始位置 */
+            opacity: 0; transition: opacity 0.6s ease-out;
+        }
+        .scroll-track.loaded { opacity: 1; transform: translate3d(0, 0, 0); }
+
+        .scroll-track img {
+            width: 100%; height: auto; display: block;
+            border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+            transition: transform 0.15s, filter 0.2s;
+            cursor: pointer;
+            content-visibility: auto;
+        }
+        .scroll-track img:active { transform: scale(0.96); filter: brightness(0.9); }
+
+
+        /* --- 4. 底部一言 (优化响应速度) --- */
+        .glass-footer {
+            position: fixed; bottom: 0; left: 0; width: 100%;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.1); /* 极淡背景 */
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 90; cursor: pointer;
+        }
+        /* 点击时的反馈 */
+        .glass-footer:active { background: rgba(255, 255, 255, 0.2); }
+
+        .hitokoto-text {
+            color: #555; /* 深灰色文字，在粉色背景更易读 */
+            font-size: 13px; font-weight: 500; letter-spacing: 0.5px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            padding: 0 20px;
+            opacity: 1; transition: opacity 0.2s ease; /* 加快淡入淡出 */
+        }
+        .text-hidden { opacity: 0; }
+
+
+        /* --- 5. 音乐控件 (修复可见性) --- */
+        .music-control-box {
+            position: fixed; top: 20px; right: 20px;
+            width: 44px; height: 44px;
+            /* 强制使用深色半透明背景，确保能看见 */
+            background-color: var(--btn-bg);
+            backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 50%;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+            display: flex; justify-content: center; align-items: center;
+            z-index: 150; /* 确保在图片之上 */
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .music-control-box:active { transform: scale(0.9); }
+
+        /* 图标样式 */
+        .music-icon-svg {
+            width: 20px; height: 20px;
+            fill: #fff; /* 纯白图标 */
+            will-change: transform;
+        }
+        
+        /* 旋转动画类 */
+        .music-rotating .music-icon-svg {
+            animation: rotate-disk 4s linear infinite;
+        }
+        @keyframes rotate-disk { 100% { transform: rotate(360deg); } }
+
+
+        /* --- 6. 欢迎弹窗 --- */
+        .welcome-modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 200; /* 最高层级 */
+            display: flex; justify-content: center; align-items: center;
+            opacity: 0; visibility: hidden;
+            transition: opacity 0.4s ease;
+        }
+        .welcome-modal-overlay.active { opacity: 1; visibility: visible; }
+
+        .welcome-content-box {
+            width: 80%; max-width: 320px;
+            padding: 30px 20px;
+            background: rgba(255, 255, 255, 0.9); /* 亮色磨砂卡片 */
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            text-align: center; color: #333;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+            transform: translateY(20px) scale(0.95);
+            transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        .welcome-modal-overlay.active .welcome-content-box { transform: translateY(0) scale(1); }
+
+        .welcome-title { font-size: 20px; font-weight: bold; margin-bottom: 15px; color: #000; }
+        .welcome-info { font-size: 14px; line-height: 1.8; color: #666; margin-bottom: 25px; }
+        .highlight-num { color: #d66d75; font-weight: 800; font-family: monospace; font-size: 1.1em; }
+        
+        .welcome-close-btn {
+            display: inline-block; padding: 12px 35px;
+            background: #333; color: #fff;
+            border-radius: 30px; font-size: 14px; font-weight: 600;
+            cursor: pointer; transition: background 0.2s;
+        }
+        .welcome-close-btn:active { background: #000; }
+
+
+        /* --- 7. Lightbox --- */
+        .lightbox-modal {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-color: var(--overlay-bg); z-index: 999;
+            display: flex; justify-content: center; align-items: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s;
+            backdrop-filter: blur(8px);
+        }
+        .lightbox-modal.active { opacity: 1; pointer-events: auto; }
+        .lightbox-image-container {
+            width: 100%; height: 100%; display: flex; justify-content: center; align-items: center;
+            transform: scale(0.95); transition: transform 0.3s cubic-bezier(0.2, 1, 0.3, 1);
+        }
+        .lightbox-modal.active .lightbox-image-container { transform: scale(1); }
+        .lightbox-image { max-width: 100%; max-height: 100%; object-fit: contain; }
+
+    </style>
+</head>
+<body>
+
+    <audio id="bgm-audio" src="./bgm.mp3" loop preload="auto"></audio>
+
+    <div class="music-control-box" id="music-toggle">
+        <svg class="music-icon-svg" viewBox="0 0 24 24">
+            <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+        </svg>
+    </div>
+
+    <div class="main-stage" id="stage">
+        <div class="column-viewport">
+            <div class="scroll-track" id="track-left">
+                <img src="https://picsum.photos/300/450?random=1" decoding="async">
+                <img src="https://picsum.photos/300/550?random=2" decoding="async">
+                <img src="https://picsum.photos/300/350?random=3" decoding="async">
+                <img src="https://picsum.photos/300/400?random=4" decoding="async">
+                <img src="https://picsum.photos/300/450?random=1" decoding="async">
+                <img src="https://picsum.photos/300/550?random=2" decoding="async">
+                <img src="https://picsum.photos/300/350?random=3" decoding="async">
+                <img src="https://picsum.photos/300/400?random=4" decoding="async">
+            </div>
+        </div>
+        <div class="column-viewport">
+            <div class="scroll-track" id="track-right">
+                <img src="https://picsum.photos/300/500?random=11" decoding="async">
+                <img src="https://picsum.photos/300/400?random=12" decoding="async">
+                <img src="https://picsum.photos/300/600?random=13" decoding="async">
+                <img src="https://picsum.photos/300/350?random=14" decoding="async">
+                <img src="https://picsum.photos/300/500?random=11" decoding="async">
+                <img src="https://picsum.photos/300/400?random=12" decoding="async">
+                <img src="https://picsum.photos/300/600?random=13" decoding="async">
+                <img src="https://picsum.photos/300/350?random=14" decoding="async">
+            </div>
+        </div>
+    </div>
+
+    <div class="glass-footer" id="hitokoto-box">
+        <span class="hitokoto-text" id="hitokoto-text">点击获取每日一言...</span>
+    </div>
+
+    <div class="welcome-modal-overlay" id="welcome-modal">
+        <div class="welcome-content-box">
+            <div class="welcome-title">Welcome ✨</div>
+            <div class="welcome-info">
+                第 <span class="highlight-num" id="busuanzi_value_site_uv">...</span> 位访客<br>
+                总访问量 <span class="highlight-num" id="busuanzi_value_site_pv">...</span> 次
+            </div>
+            <div class="welcome-close-btn" id="welcome-close">开启旅程</div>
+        </div>
+    </div>
+
+    <div class="lightbox-modal" id="lightbox">
+        <div class="lightbox-image-container">
+            <img src="" class="lightbox-image" id="lightbox-img">
+        </div>
+    </div>
+
+    <script>
+        // ================= 1. 滚动逻辑 (JS 物理驱动) =================
+        class Scroller {
+            constructor(id, speed) {
+                this.el = document.getElementById(id);
+                this.speed = speed;
+                this.y = 0;
+                this.h = 0;
+                this.ready = false;
+            }
+            init() {
+                const imgs = this.el.querySelectorAll('img');
+                let c = 0;
+                const check = () => {
+                    c++;
+                    if (c >= imgs.length) {
+                        this.h = this.el.scrollHeight / 2;
+                        this.el.classList.add('loaded');
+                        this.ready = true;
+                    }
+                };
+                imgs.forEach(img => {
+                    if (img.complete) check();
+                    else img.onload = check;
+                });
+            }
+            move(dy) {
+                if (!this.ready || this.h === 0) return;
+                this.y += dy;
+                // 无缝循环
+                if (this.y <= -this.h) this.y += this.h;
+                else if (this.y > 0) this.y -= this.h;
+                this.el.style.transform = `translate3d(0, ${this.y}px, 0)`;
+            }
+        }
+
+        const left = new Scroller('track-left', 0.5);
+        const right = new Scroller('track-right', 0.8);
+
+        let dragging = false, lastY = 0, timer = null, paused = false;
+
+        // 动画循环
+        function loop() {
+            requestAnimationFrame(loop);
+            // 弹窗或全屏时不滚动
+            if (document.getElementById('welcome-modal').classList.contains('active') ||
+                document.getElementById('lightbox').classList.contains('active')) return;
+
+            if (!dragging && !paused) {
+                left.move(-left.speed);
+                right.move(-right.speed);
+            }
+        }
+
+        // ================= 2. 交互处理 =================
+        const stage = document.getElementById('stage');
+        
+        stage.addEventListener('pointerdown', e => {
+            if(e.target.closest('#hitokoto-box')) return; // 避开一言
+            dragging = true; paused = true;
+            clearTimeout(timer);
+            lastY = e.clientY;
+        });
+
+        stage.addEventListener('pointermove', e => {
+            if(!dragging) return;
+            e.preventDefault();
+            const dy = e.clientY - lastY;
+            lastY = e.clientY;
+            left.move(dy); right.move(dy);
+        });
+
+        function stopDrag() {
+            dragging = false;
+            clearTimeout(timer);
+            // 修正点：改为 0.8秒 (800ms) 恢复
+            timer = setTimeout(() => { paused = false; }, 800);
+        }
+        stage.addEventListener('pointerup', stopDrag);
+        stage.addEventListener('pointercancel', stopDrag);
+
+
+        // ================= 3. 音乐与弹窗 =================
+        const audio = document.getElementById('bgm-audio');
+        const mBtn = document.getElementById('music-toggle');
+        let playing = false;
+
+        function playMusic() {
+            audio.play().then(() => {
+                playing = true;
+                mBtn.classList.add('music-rotating');
+            }).catch(e => {
+                console.log("Autoplay blocked, waiting for interaction");
+                playing = false;
+            });
+        }
+
+        function pauseMusic() {
+            audio.pause();
+            playing = false;
+            mBtn.classList.remove('music-rotating');
+        }
+
+        mBtn.addEventListener('click', () => {
+            if (playing) pauseMusic();
+            else playMusic();
+        });
+
+        // 欢迎弹窗逻辑
+        const welcome = document.getElementById('welcome-modal');
+        // 页面加载后延迟显示弹窗
+        window.onload = () => {
+            left.init(); right.init(); loop();
+            fetchHitokoto(); // 预加载一言
+            setTimeout(() => { welcome.classList.add('active'); }, 300);
+        };
+
+        document.getElementById('welcome-close').addEventListener('click', () => {
+            welcome.classList.remove('active');
+            playMusic(); // 关闭弹窗时尝试播放
+            stopDrag(); // 恢复滚动
+        });
+
+
+        // ================= 4. 极速一言 (优化版) =================
+        const hText = document.getElementById('hitokoto-text');
+        let fetching = false;
+
+        function fetchHitokoto() {
+            if(fetching) return;
+            fetching = true;
+            
+            // 1. 立即淡出
+            hText.classList.add('text-hidden');
+
+            // 2. 并发请求，不人为等待
+            fetch('https://v1.hitokoto.cn/?c=d&c=i&c=k&max_length=18')
+                .then(r => r.json())
+                .then(d => {
+                    hText.textContent = `${d.hitokoto} ${d.from_who ? '— '+d.from_who : ''}`;
+                    // 数据回来后立即淡入
+                    hText.classList.remove('text-hidden');
+                })
+                .catch(() => {
+                    hText.classList.remove('text-hidden'); // 失败也显示
+                })
+                .finally(() => {
+                    fetching = false;
+                });
+        }
+        document.getElementById('hitokoto-box').addEventListener('click', fetchHitokoto);
+
+
+        // ================= 5. Lightbox =================
+        const lb = document.getElementById('lightbox');
+        const lbImg = document.getElementById('lightbox-img');
+        
+        document.querySelectorAll('.scroll-track img').forEach(img => {
+            img.addEventListener('click', e => {
+                e.stopPropagation();
+                lbImg.src = img.src;
+                lb.classList.add('active');
+            });
+        });
+        lb.addEventListener('click', () => {
+            lb.classList.remove('active');
+            setTimeout(() => { lbImg.src = ''; }, 300);
+        });
+
+    </script>
+</body>
+</html>
