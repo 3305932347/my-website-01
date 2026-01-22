@@ -9,7 +9,7 @@
     <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
 
     <style>
-        /* --- 样式保持不变，已包含移动端适配 --- */
+        /* --- 样式部分完全保持不变 --- */
         :root {
             --bg-color: #f5e6e8;
             --overlay-bg: rgba(0, 0, 0, 0.9);
@@ -161,12 +161,10 @@
 
     <div class="main-stage" id="stage">
         <div class="column-viewport">
-            <div class="scroll-track" id="track-left">
-                </div>
+            <div class="scroll-track" id="track-left"></div>
         </div>
         <div class="column-viewport">
-            <div class="scroll-track" id="track-right">
-                </div>
+            <div class="scroll-track" id="track-right"></div>
         </div>
     </div>
 
@@ -192,34 +190,31 @@
     </div>
 
     <script>
-        // ================= 1. 图片生成逻辑 (重点修改部分) =================
+        // ================= 1. 图片生成逻辑 (修正版：使用本地路径) =================
         
-        // 配置您的 GitHub 仓库信息
-        const GH_USER = "3305932347";
-        const GH_REPO = "my-website-01";
-        // 注意：如果是 master 分支，请把 'main' 改为 'master'
-        const GH_BRANCH = "main"; 
-        const IMG_FOLDER = "photos";
-        const IMG_COUNT = 120; // 图片总数 1-120
+        // 之前使用 jsDelivr 报错是因为仓库太大了 (>50MB)
+        // 既然部署在 Cloudflare Pages，直接使用相对路径读取最快、最稳！
+        
+        const IMG_FOLDER = "./photos"; // 指向当前项目下的 photos 文件夹
+        const IMG_COUNT = 120; // 1-120 张图片
 
-        // 自动生成图片链接数组
         const myImages = [];
         for (let i = 1; i <= IMG_COUNT; i++) {
-            // padStart(3, '0') 负责把 1 变成 '001', 12 变成 '012'
+            // padStart(3, '0') 负责把 1 变成 '001'
             const num = String(i).padStart(3, '0');
-            const url = `https://cdn.jsdelivr.net/gh/${GH_USER}/${GH_REPO}@${GH_BRANCH}/${IMG_FOLDER}/${num}.jpg`;
+            // 生成链接如：./photos/001.jpg
+            const url = `${IMG_FOLDER}/${num}.jpg`;
             myImages.push(url);
         }
 
-        // 随机打乱数组（洗牌算法），保证每次刷新看到的顺序不同
+        // 随机打乱
         myImages.sort(() => Math.random() - 0.5);
 
-        // 将图片分配到左右两个轨道
+        // 分配到左右轨道
         function distributeImages() {
             const trackLeft = document.getElementById('track-left');
             const trackRight = document.getElementById('track-right');
             
-            // 一半放左边，一半放右边
             const half = Math.ceil(myImages.length / 2);
             const leftImgs = myImages.slice(0, half);
             const rightImgs = myImages.slice(half);
@@ -229,20 +224,19 @@
         }
 
         function appendImagesToTrack(track, imgUrls) {
-            // 确保每个轨道至少有 6 张图以保证滚动效果，不够就循环
             let displayList = [...imgUrls];
+            // 确保图片够多以支持滚动
             while (displayList.length < 6) {
                 displayList = displayList.concat(imgUrls);
             }
 
-            // 这里为了实现无缝滚动，JS 会克隆一份，所以初始只需要生成一次即可
-            // (Scroller 类的 init 方法会负责克隆)
-            
             displayList.forEach(url => {
                 const img = document.createElement('img');
                 img.src = url;
-                img.loading = "lazy"; // 懒加载
-                // 绑定点击放大
+                img.loading = "lazy";
+                // 如果图片加载失败（比如文件名没对上），就不显示，避免出现裂图图标
+                img.onerror = () => { img.style.display = 'none'; };
+                
                 img.addEventListener('click', e => {
                     e.stopPropagation();
                     showLightbox(url);
@@ -262,13 +256,11 @@
                 this.ready = false;
             }
             init() {
-                // 自动克隆：确保图片足够填满屏幕高度，实现无缝滚动
                 const rawImgs = Array.from(this.el.children);
                 if(rawImgs.length === 0) return;
 
-                // 克隆所有图片追加到后面，制造无缝效果
+                // 克隆图片实现无缝
                 rawImgs.forEach(img => {
-                    // 注意：克隆的图片也需要绑定点击事件
                     const clone = img.cloneNode(true);
                     clone.addEventListener('click', e => {
                         e.stopPropagation();
@@ -277,20 +269,18 @@
                     this.el.appendChild(clone);
                 });
 
-                // 检测图片加载
                 const allImgs = this.el.querySelectorAll('img');
                 let c = 0;
                 
                 const check = () => {
                     c++;
-                    // 当加载完成 80% 的时候就开始滚动，不等全部
-                    if (c >= allImgs.length * 0.8) setupMetrics();
+                    if (c >= allImgs.length * 0.5) setupMetrics(); // 50%加载完就开始动
                 }
 
                 allImgs.forEach(img => {
                     if(img.complete) check();
                     else img.onload = check;
-                    img.onerror = check; // 即使加载失败也继续计数
+                    img.onerror = check; 
                 });
 
                 const setupMetrics = () => {
@@ -318,10 +308,8 @@
         function loop() {
             requestAnimationFrame(loop);
             if (isTabHidden) return;
-            
             const isModal = document.getElementById('welcome-modal').classList.contains('active') || 
                             document.getElementById('lightbox').classList.contains('active');
-            
             if (isModal) return;
 
             if (!dragging && !paused) {
@@ -332,7 +320,6 @@
 
         // ================= 3. 交互与状态 =================
         const stage = document.getElementById('stage');
-        
         stage.addEventListener('pointerdown', e => {
             if(e.target.closest('#hitokoto-box')) return;
             dragging = true; paused = true;
@@ -388,7 +375,6 @@
         }
         mBtn.addEventListener('click', toggleMusic);
 
-        // 一言
         const hText = document.getElementById('hitokoto-text');
         function fetchHitokoto() {
             hText.classList.add('text-hidden');
@@ -400,7 +386,6 @@
         }
         document.getElementById('hitokoto-box').addEventListener('click', fetchHitokoto);
 
-        // Lightbox
         const lb = document.getElementById('lightbox');
         const lbImg = document.getElementById('lightbox-img');
         function showLightbox(src) {
@@ -411,23 +396,11 @@
             lb.classList.remove('active');
         });
 
-        // ================= 5. 初始化流程 =================
         window.onload = () => {
-            // 1. 先生成图片 HTML
             distributeImages();
-
-            // 2. 初始化滚动条
-            left.init(); 
-            right.init(); 
-            loop();
-            
-            // 3. 其它逻辑
+            left.init(); right.init(); loop();
             fetchHitokoto();
-            setTimeout(() => { 
-                document.getElementById('welcome-modal').classList.add('active'); 
-            }, 300);
-
-            // 不蒜子容错
+            setTimeout(() => { document.getElementById('welcome-modal').classList.add('active'); }, 300);
             setTimeout(() => {
                 const uv = document.getElementById('busuanzi_value_site_uv');
                 if(uv && uv.textContent === '...') uv.textContent = '∞';
@@ -438,7 +411,6 @@
             document.getElementById('welcome-modal').classList.remove('active');
             toggleMusic(); 
         });
-
     </script>
 </body>
 </html>
