@@ -26,13 +26,13 @@
             overflow: hidden; touch-action: none;
         }
 
-        .main-stage {
+        。main-stage {
             display: flex; width: 100%; height: 100%;
             padding: 8px; gap: 8px;
             padding-bottom: calc(60px + env(safe-area-inset-bottom)); 
         }
 
-        .column-viewport {
+        。column-viewport {
             flex: 1; height: 100%;
             overflow: hidden; position: relative;
             background: rgba(255, 255, 255, 0.15);
@@ -61,7 +61,7 @@
         }
         .scroll-track img:active { transform: scale(0.96); filter: brightness(0.9); }
 
-        .glass-footer {
+        。glass-footer {
             position: fixed; bottom: 0; left: 0; width: 100%;
             height: calc(50px + env(safe-area-inset-bottom));
             padding-bottom: env(safe-area-inset-bottom);
@@ -111,7 +111,7 @@
         }
         .welcome-modal-overlay.active { opacity: 1; visibility: visible; }
 
-        .welcome-content-box {
+        。welcome-content-box {
             width: 80%; max-width: 320px;
             padding: 30px 20px;
             background: rgba(255, 255, 255, 0.9);
@@ -195,7 +195,7 @@
         // 之前使用 jsDelivr 报错是因为仓库太大了 (>50MB)
         // 既然部署在 Cloudflare Pages，直接使用相对路径读取最快、最稳！
         
-        const IMG_FOLDER = "./photos"; // 指向当前项目下的 photos 文件夹
+        const IMG_FOLDER = "./photo"; // 指向当前项目下的 photos 文件夹
         const IMG_COUNT = 120; // 1-120 张图片
 
         const myImages = [];
