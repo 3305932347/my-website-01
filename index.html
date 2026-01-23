@@ -4,31 +4,35 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="referrer" content="no-referrer">
-    <title>明年春暖花开日</title>
+    <title>我的丝滑主页</title>
     
     <script async src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
 
     <style>
-        /* --- 样式部分完全保持不变 --- */
+        /* --- 1. 核心变量 --- */
         :root {
             --bg-color: #f5e6e8;
             --overlay-bg: rgba(0, 0, 0, 0.9);
             --btn-bg: rgba(0, 0, 0, 0.6); 
         }
 
+        /* --- 2. 全局重置 --- */
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
         
         body, html {
             margin: 0; padding: 0; width: 100%; 
+            /* 适配移动端高度 */
             height: 100vh; height: 100dvh; 
             background-color: var(--bg-color);
             font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
             overflow: hidden; touch-action: none;
         }
 
+        /* --- 3. 布局结构 --- */
         .main-stage {
             display: flex; width: 100%; height: 100%;
             padding: 8px; gap: 8px;
+            /* 底部留出空间给一言 + 适配 iPhone 底部安全区 */
             padding-bottom: calc(60px + env(safe-area-inset-bottom)); 
         }
 
@@ -41,6 +45,7 @@
         }
         .column-viewport:active { cursor: grabbing; }
 
+        /* 滚动轨道 */
         .scroll-track {
             display: flex; flex-direction: column; gap: 10px;
             padding: 8px 0; width: 100%;
@@ -56,11 +61,13 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.08);
             transition: transform 0.15s, filter 0.2s;
             cursor: pointer;
+            /* 灰色占位背景 */
             background: rgba(0,0,0,0.05); 
             min-height: 150px; 
         }
         .scroll-track img:active { transform: scale(0.96); filter: brightness(0.9); }
 
+        /* --- 4. 底部一言 --- */
         .glass-footer {
             position: fixed; bottom: 0; left: 0; width: 100%;
             height: calc(50px + env(safe-area-inset-bottom));
@@ -81,6 +88,7 @@
         }
         .text-hidden { opacity: 0; }
 
+        /* --- 5. 音乐控件 --- */
         .music-control-box {
             position: fixed; top: 20px; right: 20px;
             width: 44px; height: 44px;
@@ -94,14 +102,15 @@
         }
         .music-control-box:active { transform: scale(0.9); }
 
-        。music-icon-svg {
+        .music-icon-svg {
             width: 20px; height: 20px; fill: #fff;
             animation: rotate-disk 4s linear infinite;
             animation-play-state: paused; 
         }
-        。music-control-box.playing .music-icon-svg { animation-play-state: running; }
+        .music-control-box.playing .music-icon-svg { animation-play-state: running; }
         @keyframes rotate-disk { 100% { transform: rotate(360deg); } }
 
+        /* --- 6. 欢迎弹窗 --- */
         .welcome-modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.6);
@@ -121,7 +130,7 @@
             transform: translateY(20px) scale(0.95);
             transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
-        。welcome-modal-overlay.active .welcome-content-box { transform: translateY(0) scale(1); }
+        .welcome-modal-overlay.active .welcome-content-box { transform: translateY(0) scale(1); }
 
         .welcome-title { font-size: 20px; font-weight: bold; margin-bottom: 15px; }
         .welcome-info { font-size: 14px; line-height: 1.8; color: #666; margin-bottom: 25px; }
@@ -133,6 +142,7 @@
             font-size: 14px; font-weight: 600; cursor: pointer;
         }
 
+        /* --- 7. Lightbox --- */
         .lightbox-modal {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-color: var(--overlay-bg); z-index: 999;
@@ -140,7 +150,7 @@
             opacity: 0; pointer-events: none; transition: opacity 0.3s;
             backdrop-filter: blur(8px);
         }
-        。lightbox-modal.active { opacity: 1; pointer-events: auto; }
+        .lightbox-modal.active { opacity: 1; pointer-events: auto; }
         .lightbox-image-container {
             width: 100%; height: 100%; display: flex; justify-content: center; align-items: center;
             transform: scale(0.95); transition: transform 0.3s;
@@ -190,24 +200,22 @@
     </div>
 
     <script>
-        // ================= 1. 图片生成逻辑 (修正版：使用本地路径) =================
+        // ================= 1. 图片生成逻辑 (已修正为 photo) =================
         
-        // 之前使用 jsDelivr 报错是因为仓库太大了 (>50MB)
-        // 既然部署在 Cloudflare Pages，直接使用相对路径读取最快、最稳！
-        
-        const IMG_FOLDER = "./photo"; // 指向当前项目下的 photos 文件夹
-        const IMG_COUNT = 120; // 1-120 张图片
+        // 对应您 GitHub 仓库中的文件夹名（单数 photo）
+        const IMG_FOLDER = "./photo"; 
+        const IMG_COUNT = 120; // 图片总数 1-120
 
         const myImages = [];
         for (let i = 1; i <= IMG_COUNT; i++) {
             // padStart(3, '0') 负责把 1 变成 '001'
             const num = String(i).padStart(3, '0');
-            // 生成链接如：./photos/001.jpg
+            // 生成链接如：./photo/001.jpg
             const url = `${IMG_FOLDER}/${num}.jpg`;
             myImages.push(url);
         }
 
-        // 随机打乱
+        // 随机打乱顺序
         myImages.sort(() => Math.random() - 0.5);
 
         // 分配到左右轨道
@@ -225,7 +233,7 @@
 
         function appendImagesToTrack(track, imgUrls) {
             let displayList = [...imgUrls];
-            // 确保图片够多以支持滚动
+            // 确保图片足够多以支持滚动效果
             while (displayList.length < 6) {
                 displayList = displayList.concat(imgUrls);
             }
@@ -233,10 +241,11 @@
             displayList.forEach(url => {
                 const img = document.createElement('img');
                 img.src = url;
-                img.loading = "lazy";
-                // 如果图片加载失败（比如文件名没对上），就不显示，避免出现裂图图标
+                img.loading = "lazy"; // 懒加载
+                // 错误处理：如果图片不存在或路径不对，隐藏它，避免裂图
                 img.onerror = () => { img.style.display = 'none'; };
                 
+                // 绑定点击放大
                 img.addEventListener('click', e => {
                     e.stopPropagation();
                     showLightbox(url);
@@ -259,9 +268,10 @@
                 const rawImgs = Array.from(this.el.children);
                 if(rawImgs.length === 0) return;
 
-                // 克隆图片实现无缝
+                // 克隆图片实现无缝循环
                 rawImgs.forEach(img => {
                     const clone = img.cloneNode(true);
+                    // 克隆节点需要重新绑定事件
                     clone.addEventListener('click', e => {
                         e.stopPropagation();
                         showLightbox(clone.src);
@@ -274,7 +284,8 @@
                 
                 const check = () => {
                     c++;
-                    if (c >= allImgs.length * 0.5) setupMetrics(); // 50%加载完就开始动
+                    // 加载 50% 图片后开始准备滚动
+                    if (c >= allImgs.length * 0.5) setupMetrics();
                 }
 
                 allImgs.forEach(img => {
@@ -307,7 +318,7 @@
 
         function loop() {
             requestAnimationFrame(loop);
-            if (isTabHidden) return;
+            if (isTabHidden) return; // 切后台停止
             const isModal = document.getElementById('welcome-modal').classList.contains('active') || 
                             document.getElementById('lightbox').classList.contains('active');
             if (isModal) return;
@@ -365,7 +376,7 @@
                 playing = false;
                 mBtn.classList.remove('playing');
             } else {
-                audio.play().键，然后(() => {
+                audio.play().then(() => {
                     playing = true;
                     mBtn.classList.add('playing');
                 }).catch(() => {
@@ -379,8 +390,8 @@
         function fetchHitokoto() {
             hText.classList.add('text-hidden');
             fetch('https://v1.hitokoto.cn/?c=d&c=i&c=k&max_length=18')
-                .键，然后(r => r.json())
-                .键，然后(d => { hText.textContent = `${d.hitokoto} ${d.from_who ? '— '+d.from_who : ''}`; })
+                .then(r => r.json())
+                .then(d => { hText.textContent = `${d.hitokoto} ${d.from_who ? '— '+d.from_who : ''}`; })
                 .catch(() => { hText.textContent = "生活明朗，万物可爱。"; })
                 .finally(() => { hText.classList.remove('text-hidden'); });
         }
@@ -396,11 +407,15 @@
             lb.classList.remove('active');
         });
 
+        // ================= 5. 初始化流程 =================
         window.onload = () => {
-            distributeImages();
-            left.init(); right.init(); loop();
-            fetchHitokoto();
+            distributeImages(); // 生成图片
+            left.init(); right.init(); loop(); // 启动滚动
+            fetchHitokoto(); // 加载一言
+            
             setTimeout(() => { document.getElementById('welcome-modal').classList.add('active'); }, 300);
+            
+            // 不蒜子容错
             setTimeout(() => {
                 const uv = document.getElementById('busuanzi_value_site_uv');
                 if(uv && uv.textContent === '...') uv.textContent = '∞';
